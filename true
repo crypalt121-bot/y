@@ -1,1 +1,1070 @@
+local gui = loadstring(game:HttpGetAsync("https://raw.githubusercontent.com/z4gs/scripts/master/testtttt.lua"))():AddWindow("Ro-Ghoul", {
+    main_color = Color3.fromRGB(0,0,0),
+    min_size = Vector2.new(373, 340),
+    can_resize = false
+})
 
+local get = setmetatable({}, {
+    __index = function(a, b)
+        return game:GetService(b) or game[b]
+    end
+})
+
+-- Modern GUI Implementation
+local modernGui = Instance.new("ScreenGui")
+modernGui.Name = "RoGhoulModernGUI"
+modernGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+modernGui.ResetOnSpawn = false
+modernGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Main Frame
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 420, 0, 520)
+mainFrame.Position = UDim2.new(0.5, -210, 0.5, -260)
+mainFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
+mainFrame.BorderSizePixel = 0
+mainFrame.Parent = modernGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = mainFrame
+
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(45, 45, 52)
+mainStroke.Thickness = 1
+mainStroke.Parent = mainFrame
+
+-- Drag functionality
+local dragging, dragInput, dragStart, startPos
+mainFrame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 then
+        dragging = true
+        dragStart = input.Position
+        startPos = mainFrame.Position
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+mainFrame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        local delta = input.Position - dragStart
+        mainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+    end
+end)
+
+-- Header
+local header = Instance.new("Frame")
+header.Name = "Header"
+header.Size = UDim2.new(1, 0, 0, 50)
+header.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+header.BorderSizePixel = 0
+header.Parent = mainFrame
+
+local headerCorner = Instance.new("UICorner")
+headerCorner.CornerRadius = UDim.new(0, 12)
+headerCorner.Parent = header
+
+local headerFix = Instance.new("Frame")
+headerFix.Size = UDim2.new(1, 0, 0, 12)
+headerFix.Position = UDim2.new(0, 0, 1, -12)
+headerFix.BackgroundColor3 = Color3.fromRGB(22, 22, 28)
+headerFix.BorderSizePixel = 0
+headerFix.Parent = header
+
+local title = Instance.new("TextLabel")
+title.Name = "Title"
+title.Size = UDim2.new(1, -20, 1, 0)
+title.Position = UDim2.new(0, 20, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "Ro-Ghoul | Modern UI"
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.Parent = header
+
+-- Close Button
+local closeBtn = Instance.new("TextButton")
+closeBtn.Name = "CloseButton"
+closeBtn.Size = UDim2.new(0, 30, 0, 30)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
+closeBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+closeBtn.Text = "×"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 20
+closeBtn.BorderSizePixel = 0
+closeBtn.Parent = header
+
+local closeBtnCorner = Instance.new("UICorner")
+closeBtnCorner.CornerRadius = UDim.new(0, 6)
+closeBtnCorner.Parent = closeBtn
+
+closeBtn.MouseButton1Click:Connect(function()
+    modernGui:Destroy()
+end)
+
+-- Tab System
+local tabContainer = Instance.new("Frame")
+tabContainer.Name = "TabContainer"
+tabContainer.Size = UDim2.new(1, -20, 0, 35)
+tabContainer.Position = UDim2.new(0, 10, 0, 60)
+tabContainer.BackgroundTransparency = 1
+tabContainer.Parent = mainFrame
+
+local tabLayout = Instance.new("UIListLayout")
+tabLayout.FillDirection = Enum.FillDirection.Horizontal
+tabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+tabLayout.Padding = UDim.new(0, 8)
+tabLayout.Parent = tabContainer
+
+-- Content Container
+local contentFrame = Instance.new("ScrollingFrame")
+contentFrame.Name = "ContentFrame"
+contentFrame.Size = UDim2.new(1, -20, 1, -115)
+contentFrame.Position = UDim2.new(0, 10, 0, 105)
+contentFrame.BackgroundTransparency = 1
+contentFrame.BorderSizePixel = 0
+contentFrame.ScrollBarThickness = 4
+contentFrame.ScrollBarImageColor3 = Color3.fromRGB(88, 101, 242)
+contentFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+contentFrame.Parent = mainFrame
+
+local contentLayout = Instance.new("UIListLayout")
+contentLayout.Padding = UDim.new(0, 8)
+contentLayout.SortOrder = Enum.SortOrder.LayoutOrder
+contentLayout.Parent = contentFrame
+
+contentLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    contentFrame.CanvasSize = UDim2.new(0, 0, 0, contentLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Tab Manager
+local tabs = {}
+local currentTab = nil
+
+local function createTab(name)
+    local tabBtn = Instance.new("TextButton")
+    tabBtn.Name = name
+    tabBtn.Size = UDim2.new(0, 90, 0, 32)
+    tabBtn.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+    tabBtn.Text = name
+    tabBtn.TextColor3 = Color3.fromRGB(180, 180, 190)
+    tabBtn.Font = Enum.Font.GothamMedium
+    tabBtn.TextSize = 13
+    tabBtn.BorderSizePixel = 0
+    tabBtn.Parent = tabContainer
+    
+    local tabCorner = Instance.new("UICorner")
+    tabCorner.CornerRadius = UDim.new(0, 6)
+    tabCorner.Parent = tabBtn
+    
+    local container = Instance.new("Frame")
+    container.Name = name.."Content"
+    container.Size = UDim2.new(1, 0, 0, 0)
+    container.BackgroundTransparency = 1
+    container.Visible = false
+    container.Parent = contentFrame
+    
+    local layout = Instance.new("UIListLayout")
+    layout.Padding = UDim.new(0, 8)
+    layout.SortOrder = Enum.SortOrder.LayoutOrder
+    layout.Parent = container
+    
+    tabs[name] = {button = tabBtn, container = container, layout = layout}
+    
+    tabBtn.MouseButton1Click:Connect(function()
+        for _, tab in pairs(tabs) do
+            tab.button.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+            tab.button.TextColor3 = Color3.fromRGB(180, 180, 190)
+            tab.container.Visible = false
+        end
+        tabBtn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+        tabBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        container.Visible = true
+        currentTab = name
+    end)
+    
+    return {
+        AddLabel = function(text)
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, 0, 0, text == "" and 6 or 22)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(200, 200, 210)
+            label.Font = Enum.Font.GothamMedium
+            label.TextSize = 13
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = container
+            return {
+                Text = text,
+                label = label
+            }
+        end,
+        
+        AddButton = function(text, callback)
+            local btn = Instance.new("TextButton")
+            btn.Size = UDim2.new(1, 0, 0, 36)
+            btn.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+            btn.Text = text
+            btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+            btn.Font = Enum.Font.GothamBold
+            btn.TextSize = 13
+            btn.BorderSizePixel = 0
+            btn.Parent = container
+            
+            local btnCorner = Instance.new("UICorner")
+            btnCorner.CornerRadius = UDim.new(0, 6)
+            btnCorner.Parent = btn
+            
+            btn.MouseButton1Click:Connect(function()
+                if callback then callback() end
+            end)
+            
+            return btn
+        end,
+        
+        AddSwitch = function(text, callback)
+            local switchFrame = Instance.new("Frame")
+            switchFrame.Size = UDim2.new(1, 0, 0, 36)
+            switchFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            switchFrame.BorderSizePixel = 0
+            switchFrame.Parent = container
+            
+            local switchCorner = Instance.new("UICorner")
+            switchCorner.CornerRadius = UDim.new(0, 6)
+            switchCorner.Parent = switchFrame
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -60, 1, 0)
+            label.Position = UDim2.new(0, 12, 0, 0)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(200, 200, 210)
+            label.Font = Enum.Font.GothamMedium
+            label.TextSize = 12
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = switchFrame
+            
+            local toggle = Instance.new("TextButton")
+            toggle.Size = UDim2.new(0, 40, 0, 20)
+            toggle.Position = UDim2.new(1, -50, 0.5, -10)
+            toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+            toggle.Text = ""
+            toggle.BorderSizePixel = 0
+            toggle.Parent = switchFrame
+            
+            local toggleCorner = Instance.new("UICorner")
+            toggleCorner.CornerRadius = UDim.new(1, 0)
+            toggleCorner.Parent = toggle
+            
+            local indicator = Instance.new("Frame")
+            indicator.Size = UDim2.new(0, 16, 0, 16)
+            indicator.Position = UDim2.new(0, 2, 0.5, -8)
+            indicator.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+            indicator.BorderSizePixel = 0
+            indicator.Parent = toggle
+            
+            local indicatorCorner = Instance.new("UICorner")
+            indicatorCorner.CornerRadius = UDim.new(1, 0)
+            indicatorCorner.Parent = indicator
+            
+            local enabled = false
+            
+            toggle.MouseButton1Click:Connect(function()
+                enabled = not enabled
+                if enabled then
+                    toggle.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+                    indicator.Position = UDim2.new(1, -18, 0.5, -8)
+                else
+                    toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+                    indicator.Position = UDim2.new(0, 2, 0.5, -8)
+                end
+                if callback then callback(enabled) end
+            end)
+            
+            return {
+                Set = function(self, value)
+                    enabled = value
+                    if value then
+                        toggle.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+                        indicator.Position = UDim2.new(1, -18, 0.5, -8)
+                    else
+                        toggle.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+                        indicator.Position = UDim2.new(0, 2, 0.5, -8)
+                    end
+                end
+            }
+        end,
+        
+        AddDropdown = function(text, callback)
+            local dropFrame = Instance.new("Frame")
+            dropFrame.Size = UDim2.new(1, 0, 0, 36)
+            dropFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            dropFrame.BorderSizePixel = 0
+            dropFrame.Parent = container
+            
+            local dropCorner = Instance.new("UICorner")
+            dropCorner.CornerRadius = UDim.new(0, 6)
+            dropCorner.Parent = dropFrame
+            
+            local dropBtn = Instance.new("TextButton")
+            dropBtn.Size = UDim2.new(1, -16, 1, -8)
+            dropBtn.Position = UDim2.new(0, 8, 0, 4)
+            dropBtn.BackgroundTransparency = 1
+            dropBtn.Text = text
+            dropBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+            dropBtn.Font = Enum.Font.GothamMedium
+            dropBtn.TextSize = 12
+            dropBtn.TextXAlignment = Enum.TextXAlignment.Left
+            dropBtn.Parent = dropFrame
+            
+            local arrow = Instance.new("TextLabel")
+            arrow.Size = UDim2.new(0, 20, 1, 0)
+            arrow.Position = UDim2.new(1, -20, 0, 0)
+            arrow.BackgroundTransparency = 1
+            arrow.Text = "▼"
+            arrow.TextColor3 = Color3.fromRGB(200, 200, 210)
+            arrow.Font = Enum.Font.GothamBold
+            arrow.TextSize = 10
+            arrow.Parent = dropFrame
+            
+            local optionsFrame = Instance.new("Frame")
+            optionsFrame.Size = UDim2.new(1, 0, 0, 0)
+            optionsFrame.Position = UDim2.new(0, 0, 1, 4)
+            optionsFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            optionsFrame.BorderSizePixel = 0
+            optionsFrame.Visible = false
+            optionsFrame.ZIndex = 10
+            optionsFrame.Parent = dropFrame
+            
+            local optionsCorner = Instance.new("UICorner")
+            optionsCorner.CornerRadius = UDim.new(0, 6)
+            optionsCorner.Parent = optionsFrame
+            
+            local optionsLayout = Instance.new("UIListLayout")
+            optionsLayout.Padding = UDim.new(0, 2)
+            optionsLayout.Parent = optionsFrame
+            
+            local isOpen = false
+            
+            dropBtn.MouseButton1Click:Connect(function()
+                isOpen = not isOpen
+                optionsFrame.Visible = isOpen
+                arrow.Text = isOpen and "▲" or "▼"
+            end)
+            
+            return {
+                Add = function(self, option)
+                    local optBtn = Instance.new("TextButton")
+                    optBtn.Size = UDim2.new(1, -8, 0, 28)
+                    optBtn.BackgroundTransparency = 1
+                    optBtn.Text = tostring(option)
+                    optBtn.TextColor3 = Color3.fromRGB(200, 200, 210)
+                    optBtn.Font = Enum.Font.Gotham
+                    optBtn.TextSize = 12
+                    optBtn.TextXAlignment = Enum.TextXAlignment.Left
+                    optBtn.Parent = optionsFrame
+                    
+                    local padding = Instance.new("UIPadding")
+                    padding.PaddingLeft = UDim.new(0, 8)
+                    padding.Parent = optBtn
+                    
+                    optBtn.MouseButton1Click:Connect(function()
+                        dropBtn.Text = tostring(option)
+                        optionsFrame.Visible = false
+                        isOpen = false
+                        arrow.Text = "▼"
+                        if callback then callback(option) end
+                    end)
+                    
+                    optionsFrame.Size = UDim2.new(1, 0, 0, optionsLayout.AbsoluteContentSize.Y + 8)
+                end
+            }
+        end,
+        
+        AddSlider = function(text, callback, settings)
+            local sliderFrame = Instance.new("Frame")
+            sliderFrame.Size = UDim2.new(1, 0, 0, 50)
+            sliderFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            sliderFrame.BorderSizePixel = 0
+            sliderFrame.Parent = container
+            
+            local sliderCorner = Instance.new("UICorner")
+            sliderCorner.CornerRadius = UDim.new(0, 6)
+            sliderCorner.Parent = sliderFrame
+            
+            local label = Instance.new("TextLabel")
+            label.Size = UDim2.new(1, -16, 0, 20)
+            label.Position = UDim2.new(0, 8, 0, 4)
+            label.BackgroundTransparency = 1
+            label.Text = text
+            label.TextColor3 = Color3.fromRGB(200, 200, 210)
+            label.Font = Enum.Font.GothamMedium
+            label.TextSize = 12
+            label.TextXAlignment = Enum.TextXAlignment.Left
+            label.Parent = sliderFrame
+            
+            local valueLabel = Instance.new("TextLabel")
+            valueLabel.Size = UDim2.new(0, 40, 0, 20)
+            valueLabel.Position = UDim2.new(1, -48, 0, 4)
+            valueLabel.BackgroundTransparency = 1
+            valueLabel.Text = tostring(settings.min)
+            valueLabel.TextColor3 = Color3.fromRGB(88, 101, 242)
+            valueLabel.Font = Enum.Font.GothamBold
+            valueLabel.TextSize = 12
+            valueLabel.TextXAlignment = Enum.TextXAlignment.Right
+            valueLabel.Parent = sliderFrame
+            
+            local sliderBar = Instance.new("Frame")
+            sliderBar.Size = UDim2.new(1, -16, 0, 4)
+            sliderBar.Position = UDim2.new(0, 8, 1, -12)
+            sliderBar.BackgroundColor3 = Color3.fromRGB(45, 45, 52)
+            sliderBar.BorderSizePixel = 0
+            sliderBar.Parent = sliderFrame
+            
+            local sliderBarCorner = Instance.new("UICorner")
+            sliderBarCorner.CornerRadius = UDim.new(1, 0)
+            sliderBarCorner.Parent = sliderBar
+            
+            local sliderFill = Instance.new("Frame")
+            sliderFill.Size = UDim2.new(0, 0, 1, 0)
+            sliderFill.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+            sliderFill.BorderSizePixel = 0
+            sliderFill.Parent = sliderBar
+            
+            local sliderFillCorner = Instance.new("UICorner")
+            sliderFillCorner.CornerRadius = UDim.new(1, 0)
+            sliderFillCorner.Parent = sliderFill
+            
+            local dragging = false
+            local currentValue = settings.min
+            
+            local function updateSlider(input)
+                local pos = (input.Position.X - sliderBar.AbsolutePosition.X) / sliderBar.AbsoluteSize.X
+                pos = math.clamp(pos, 0, 1)
+                currentValue = math.floor(settings.min + (settings.max - settings.min) * pos)
+                sliderFill.Size = UDim2.new(pos, 0, 1, 0)
+                valueLabel.Text = tostring(currentValue)
+                if callback and not settings.readonly then callback(currentValue) end
+            end
+            
+            sliderBar.InputBegan:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 and not settings.readonly then
+                    dragging = true
+                    updateSlider(input)
+                end
+            end)
+            
+            game:GetService("UserInputService").InputChanged:Connect(function(input)
+                if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+                    updateSlider(input)
+                end
+            end)
+            
+            game:GetService("UserInputService").InputEnded:Connect(function(input)
+                if input.UserInputType == Enum.UserInputType.MouseButton1 then
+                    dragging = false
+                end
+            end)
+            
+            return {
+                Set = function(self, value)
+                    local normalized = (value - settings.min) / (settings.max - settings.min)
+                    currentValue = value
+                    sliderFill.Size = UDim2.new(normalized, 0, 1, 0)
+                    valueLabel.Text = tostring(value)
+                end
+            }
+        end,
+        
+        AddConsole = function(settings)
+            local consoleFrame = Instance.new("Frame")
+            consoleFrame.Size = UDim2.new(1, 0, 0, settings.y or 80)
+            consoleFrame.BackgroundColor3 = Color3.fromRGB(28, 28, 34)
+            consoleFrame.BorderSizePixel = 0
+            consoleFrame.Parent = container
+            
+            local consoleCorner = Instance.new("UICorner")
+            consoleCorner.CornerRadius = UDim.new(0, 6)
+            consoleCorner.Parent = consoleFrame
+            
+            local textBox = Instance.new("TextBox")
+            textBox.Size = UDim2.new(1, -16, 1, -16)
+            textBox.Position = UDim2.new(0, 8, 0, 8)
+            textBox.BackgroundTransparency = 1
+            textBox.Text = settings.source or ""
+            textBox.TextColor3 = Color3.fromRGB(200, 200, 210)
+            textBox.Font = Enum.Font.Code
+            textBox.TextSize = 12
+            textBox.TextXAlignment = Enum.TextXAlignment.Left
+            textBox.TextYAlignment = Enum.TextYAlignment.Top
+            textBox.MultiLine = true
+            textBox.ClearTextOnFocus = false
+            textBox.Parent = consoleFrame
+            
+            return {
+                Set = function(self, text)
+                    textBox.Text = text
+                end,
+                Get = function(self)
+                    return textBox.Text
+                end,
+                OnChange = function(self, callback)
+                    textBox:GetPropertyChangedSignal("Text"):Connect(function()
+                        if callback then callback(textBox.Text) end
+                    end)
+                end
+            }
+        end,
+        
+        Show = function()
+            if not currentTab then
+                for _, tab in pairs(tabs) do
+                    tab.button.BackgroundColor3 = Color3.fromRGB(32, 32, 38)
+                    tab.button.TextColor3 = Color3.fromRGB(180, 180, 190)
+                    tab.container.Visible = false
+                end
+                tabs[name].button.BackgroundColor3 = Color3.fromRGB(88, 101, 242)
+                tabs[name].button.TextColor3 = Color3.fromRGB(255, 255, 255)
+                tabs[name].container.Visible = true
+                currentTab = name
+            end
+        end
+    }
+end
+
+local tab1, tab2, tab3, tab4 = createTab("Main"), createTab("Farm"), createTab("Trainer"), createTab("Misc")
+
+local btn, btn2, btn3, key, nmc, trainers, labels
+local findobj, findobjofclass, waitforobj, fire, invoke = get.FindFirstChild, get.FindFirstChildOfClass, get.WaitForChild, Instance.new("RemoteEvent").FireServer, Instance.new("RemoteFunction").InvokeServer
+local player = get.Players.LocalPlayer
+
+repeat wait() until player:FindFirstChild("PlayerFolder")
+
+local team, remotes, stat = player.PlayerFolder.Customization.Team.Value, get.ReplicatedStorage.Remotes, player.PlayerFolder.StatsFunction
+local oldtick, farmtick = 0, 0
+local camera = workspace.CurrentCamera
+local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/scripts/master/Settings.lua"))()("Ro-Ghoul Autofarm", {
+    Skills = {
+        E = false,
+        F = false,
+        C = false,
+        R = false
+    },
+    Boss = {
+        ["Gyakusatsu"] = false,
+        ["Eto Yoshimura"] = false,
+        ["Koutarou Amon"] = false,
+        ["Nishiki Nishio"] = false
+    },
+    DistanceFromNpc = 5,
+    DistanceFromBoss = 8,
+    TeleportSpeed = 150,
+    ReputationFarm = false,
+    ReputationCashout = false,
+    AutoKickWhitelist = ""
+})
+
+local array = {
+    boss = {
+        ["Gyakusatsu"] = 1250,
+        ["Eto Yoshimura"] = 1250,
+        ["Koutarou Amon"] = 750,
+        ["Nishiki Nishio"] = 250
+    },
+
+    npcs = {["Aogiri Members"] = "GhoulSpawns", Investigators = "CCGSpawns", Humans = "HumanSpawns"},
+
+    stages = {"One", "Two", "Three", "Four", "Five", "Six"},
+
+    skills = {
+        E = player.PlayerFolder.Special1CD,
+        F = player.PlayerFolder.Special3CD,
+        C = player.PlayerFolder.SpecialBonusCD,
+        R = player.PlayerFolder.Special2CD
+    }
+}
+
+tab1:AddLabel("Target")
+
+local drop = tab1:AddDropdown("Select", function(opt)
+    array.targ = array.npcs[opt]
+end)
+
+btn = tab1:AddButton("Start", function()
+    if not array.autofarm then
+        if key then
+            btn.Text, array.autofarm = "Stop", true
+            local farmtick = tick()
+            while array.autofarm do
+                labels("tfarm", "Time elapsed: "..os.date("!%H:%M:%S", tick() - farmtick))
+                wait(1)
+            end
+        else
+            player:Kick("Failed to get the Remote key, please try to execute the script again")
+        end
+    else
+        btn.Text, array.autofarm, array.died = "Start", false, false
+    end
+end)
+
+local function format(number)
+    local i, k, j = tostring(number):match("(%-?%d?)(%d*)(%.?.*)")
+    return i..k:reverse():gsub("(%d%d%d)", "%1,"):reverse()..j
+end
+
+labels = setmetatable({
+    text = {label = tab1:AddLabel("")},
+    tfarm = {label = tab1:AddLabel("")},
+    space = {label = tab1:AddLabel("")},
+    Quest = {prefix = "Current Quest: ", label = tab1:AddLabel("Current Quest: None")},
+    Yen = {prefix = "Yen: ", label = tab1:AddLabel("Yen: 0"), value = 0, oldval = player.PlayerFolder.Stats.Yen.Value},
+    RC = {prefix = "RC: ", label = tab1:AddLabel("RC: 0"), value = 0, oldval = player.PlayerFolder.Stats.RC.Value},
+    Kills = {prefix = "Kills: ", label = tab1:AddLabel("Kills: 0"), value = 0} 
+}, {
+    __call = function (self, typ, newv, oldv)
+        if typ and newv then
+            local object = self[typ]
+            if type(newv) == "number" then
+                object.value = object.value + newv
+                object.label.label.Text = object.prefix..format(object.value)
+                if oldv then
+                    object.oldval = oldv
+                end
+            elseif object.prefix then
+                object.label.label.Text = object.prefix..newv
+            else
+                object.label.label.Text = newv
+            end
+            return
+        end
+        for i,v in pairs(labels) do
+            v.value = 0
+            v.label.label.Text = v.prefix.."0"
+        end
+    end
+})
+
+local function getLabel(la)
+    return labels[la].value and labels[la].value or labels[la].label.label.Text
+end
+
+btn3 = tab1:AddButton("Reset", function() labels() end)
+
+if team == "CCG" then tab2:AddLabel("Quinque Stage") else tab2:AddLabel("Kagune Stage") end
+
+local drop2 = tab2:AddDropdown("[ 1 ]", function(opt)
+    array.stage = array.stages[tonumber(opt)]
+end)
+
+array.stage = "One"
+
+tab2:AddSwitch("Reputation Farm", function(bool) 
+    myData.ReputationFarm = bool
+end):Set(myData.ReputationFarm)
+
+tab2:AddSwitch("Auto Reputation Cashout", function(bool)
+    myData.ReputationCashout = bool
+end):Set(myData.ReputationCashout)
+
+for i,v in pairs(array.boss) do
+    tab2:AddSwitch(i.." Boss Farm ".."(".."lvl "..v.."+)", function(bool)
+        myData.Boss[i] = bool
+    end):Set(myData.Boss[i])
+end
+
+tab2:AddSlider("TP Speed", function(x)
+    myData.TeleportSpeed = x
+end, {min = 90, max = 250}):Set(45)
+
+tab2:AddSlider("Distance from NPC", function(x)
+    myData.DistanceFromNpc = x * -1
+end, {min = 0, max = 8}):Set(65)
+
+tab2:AddSlider("Distance from Bosses", function(x)
+    myData.DistanceFromBoss = x * -1
+end, {min = 0, max = 15}):Set(55)
+
+labels.p = {label = tab3:AddLabel("Current trainer: "..player.PlayerFolder.Trainers[team.."Trainer"].Value)}
+
+local progress = tab3:AddSlider("Progress", nil, {min = 0, max = 100, readonly = true})
+
+progress:Set(player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Value)
+
+player.PlayerFolder.Trainers[team.."Trainer"].Changed:connect(function()
+    labels("p", "Current trainer: "..player.PlayerFolder.Trainers[team.."Trainer"].Value)
+    progress:Set(player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Value)
+end)
+
+btn2 = tab3:AddButton("Start", function()
+    if not array.trainer then
+        array.trainer, btn2.Text = true, "Stop"
+        local connection, time
+
+        while array.trainer do
+            if connection and connection.Connected then
+                connection:Disconnect()
+            end
+            
+            local tkey, result
+
+            connection = player.Backpack.DescendantAdded:Connect(function(obj)
+                if tostring(obj) == "TSCodeVal" and obj:IsA("StringValue") then
+                    tkey = obj.Value
+                end
+            end)
+            
+            result = invoke(remotes.Trainers.RequestTraining)
+
+            if result == "TRAINING" then
+                for i,v in pairs(workspace.TrainingSessions:GetChildren()) do
+                    if waitforobj(v, "Player").Value == player then
+                        fire(waitforobj(v, "Comm"), "Finished", tkey, false)
+                        break
+                    end
+                end
+            elseif result == "TRAINING COMPLETE" then
+                labels("time", "Switching to other trainer...")
+                for i,v in pairs(player.PlayerFolder.Trainers:GetDescendants()) do
+                    if table.find(trainers, v.Name) and findobj(v, "Progress") and tonumber(v.Progress.Value) < 100 and tonumber(player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Value) == 100 then
+                        invoke(remotes.Trainers.ChangeTrainer, v.Name)
+                        wait(1.5)
+                    end
+                end
+            else
+                labels("time", "Time until the next training: "..result)
+            end
+            wait(1)
+        end
+        labels("time", "")
+    else
+        array.trainer, btn2.Text = false, "Start"
+    end
+end)
+
+labels.time = {label = tab3:AddLabel("")}
+
+tab4:AddSwitch("Auto add kagune/quinque stats", function(bool) array.weapon = bool end)
+tab4:AddSwitch("Auto add durability stats", function(bool) array.dura = bool end)
+tab4:AddSwitch("Auto kick", function(bool) array.kick = bool end)
+tab4:AddLabel("Auto kick whitelist (type 1 name per line)")
+
+local console = tab4:AddConsole({
+    ["y"] = 50,
+    ["source"] = "Text",
+})
+
+console:Set(myData.AutoKickWhitelist)
+
+console:OnChange(function(newtext)
+    myData.AutoKickWhitelist = newtext
+end)
+
+for i,v in pairs(array.skills) do
+    tab4:AddSwitch("Auto use "..i.." skill (on bosses)", function(bool)
+        myData.Skills[i] = bool
+    end):Set(myData.Skills[i])
+end
+
+do
+    local count = 0
+    for i,v in pairs(player.PlayerGui.HUD.StagesFrame.InfoScroll:GetChildren()) do
+        if v.ClassName == "Frame" and v.Name ~= "Example" then
+            count = count + 1
+            drop2:Add(count)
+        end
+    end
+end
+
+for i,v in pairs(array.npcs) do drop:Add(i) end
+
+tab1:Show()
+
+local function tp(pos)
+    if array.died then
+        player.Character.HumanoidRootPart.CFrame = pos
+        array.died = false
+        return
+    end
+
+    local val = Instance.new("CFrameValue")
+    val.Value = player.Character.HumanoidRootPart.CFrame
+
+    local tween = game:GetService("TweenService"):Create(
+        val, 
+        TweenInfo.new((player.Character.HumanoidRootPart.Position - pos.p).magnitude / myData.TeleportSpeed, Enum.EasingStyle.Linear, Enum.EasingDirection.Out, 0, false, 0), 
+        {Value = pos}
+    )
+
+    tween:Play()
+
+    local completed
+    tween.Completed:Connect(function()
+        completed = true
+    end)
+
+    while not completed do
+        if array.found or not array.autofarm or player.Character.Humanoid.Health <= 0 then tween:Cancel() break end
+        player.Character.HumanoidRootPart.CFrame = val.Value
+        task.wait()
+    end
+
+    val:Destroy()
+end
+
+local function getNPC()
+    local nearestnpc, nearest = nil, math.huge
+
+    if myData.Boss.Gyakusatsu and tonumber(player.PlayerFolder.Stats.Level.Value) > array.boss["Gyakusatsu"] and findobj(workspace.NPCSpawns["GyakusatsuSpawn"], "Gyakusatsu") then
+        local lowesthealth, lowestNpcModel = math.huge, nil
+
+        for i,v in pairs(workspace.NPCSpawns["GyakusatsuSpawn"]:GetChildren()) do
+            if v.Name ~= "Mob" and findobj(v, "Humanoid") and v.Humanoid.Health < lowesthealth then
+                lowesthealth = v.Humanoid.Health
+                lowestNpcModel = v
+            end
+        end
+
+        if not lowestNpcModel then
+            return workspace.NPCSpawns.GyakusatsuSpawn.Gyakusatsu
+        end
+        
+        return lowestNpcModel
+    end
+
+    for i,v in pairs(workspace.NPCSpawns:GetChildren()) do
+        local npc = findobjofclass(v, "Model")
+
+        if npc and findobj(npc, "Head") and not findobj(npc, "AC") then
+            if npc.Parent.Name == array.targ then
+                local magnitude = (npc.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).magnitude
+
+                if magnitude < nearest then
+                    nearestnpc, nearest = npc, magnitude
+                end
+            elseif myData.Boss[npc.Name] and tonumber(player.PlayerFolder.Stats.Level.Value) >= array.boss[npc.Name] then
+                return npc
+            end
+        end
+    end
+    return nearestnpc
+end
+
+local function getQuest(typ)
+    labels("text", "Moving to quest NPC")
+
+    local npc = team == "Ghoul" and workspace.Anteiku.Yoshimura or workspace.CCGBuilding.Yoshitoki
+
+    tp(npc.HumanoidRootPart.CFrame)
+    invoke(game:GetService("ReplicatedStorage").Remotes.Ally.AllyInfo)
+    wait()
+    fireclickdetector(npc.TaskIndicator.ClickDetector)
+
+    if array.autofarm and not array.died and (npc.HumanoidRootPart.Position - player.Character.HumanoidRootPart.Position).Magnitude <= 20 then
+        if typ then 
+            labels("text", "Getting quest...")
+            invoke(remotes[npc.Name].Task)
+            invoke(remotes[npc.Name].Task)
+            local quest = waitforobj(player.PlayerFolder.CurrentQuest.Complete, "Aogiri Member")
+            labels("Quest", ("%c/%c"):format("0", quest:WaitForChild("Max").Value))
+            quest.Changed:Connect(function(change) 
+                labels("Quest", ("%c/%c"):format(change, quest.Max.Value)) 
+            end)
+        else
+            labels("text", "Withdrawing reputation")
+            invoke(remotes.ReputationCashOut)
+            oldtick = tick()
+        end
+    end
+end
+
+local function collect(npc)
+    local timer = tick()
+    local model = waitforobj(npc, npc.Name.." Corpse", 2)
+    local clickpart = waitforobj(model, "ClickPart", 2)
+
+    player.Character.HumanoidRootPart.CFrame = clickpart.CFrame * CFrame.new(0,1.7,0)
+
+    waitforobj(clickpart, "")
+    repeat
+        if tick() - timer > 4 then
+            break
+        end
+        player.Character.Humanoid:MoveTo(clickpart.Position)
+        wait()
+        fireclickdetector(clickpart[""], 1)
+    until not model.Parent.Parent or not findobj(model, "ClickPart") or not array.autofarm or player.Character.Humanoid.Health <= 0
+end
+
+local function pressKey(topress)
+    fire(player.Character.Remotes.KeyEvent, key, topress, "Down", player:GetMouse().Hit, nil, workspace.Camera.CFrame)
+end
+
+player.PlayerFolder.Stats.RC.Changed:Connect(function(value)
+    if array.autofarm then
+        labels("RC", value - labels.RC.oldval, value)
+    end
+end)
+
+player.PlayerFolder.Stats.Yen.Changed:Connect(function(value)
+    if array.autofarm then
+        labels("Yen", value - labels.Yen.oldval, value)
+    end
+end)
+
+getconnections(player.Idled)[1]:Disable()
+
+get.Players.PlayerAdded:Connect(function(plr)
+    if array.kick then
+        local splittedarray = console:Get():split("\n")
+
+        if not table.find(splittedarray, plr.Name) then
+            player:Kick("Player joined, name: "..plr.Name) 
+        end
+    end
+end)
+
+player.PlayerFolder.Trainers[player.PlayerFolder.Trainers[team.."Trainer"].Value].Progress.Changed:Connect(function(c)
+    progress:Set(tonumber(c))
+end)
+
+coroutine.wrap(function()
+    while wait() do
+        if tonumber(player.PlayerFolder.Stats.Focus.Value) > 0 then
+            if array.weapon then
+                invoke(stat, "Focus", "WeaponAddButton", 1)
+            end
+            if array.dura then
+                invoke(stat, "Focus", "DurabilityAddButton", 1)
+            end
+        end
+    end
+end)()
+
+-- remote Key grabber + grab updated trainers table
+do
+    fireclickdetector(workspace.TrainerModel.ClickIndicator.ClickDetector)
+    waitforobj(waitforobj(player.PlayerGui, "TrainersGui"), "TrainersGuiScript")
+    player.PlayerGui.TrainersGui:Destroy()
+
+    repeat 
+        for i,v in pairs(getgc(true)) do
+            if not key and type(v) == "function" and getinfo(v).source:find(".ClientControl") then
+                for i2,v2 in pairs(getconstants(v)) do
+                    if v2 == "KeyEvent" then
+                        local keyfound = getconstant(v, i2 + 1)
+                        if #keyfound >= 100 then
+                            key = keyfound
+                            break
+                        end
+                    end
+                end
+            elseif type(v) == "table" and ((table.find(v, "(S1) Kureo Mado") and team == "CCG") or (table.find(v, "(S1) Ken Kaneki"))) then
+                trainers = v
+            end
+        end
+        wait()
+    until key
+end
+
+-- auto farm
+while true do
+    if array.autofarm then
+        pcall(function()
+            if player.Character.Humanoid.Health > 0 and player.Character.HumanoidRootPart and player.Character.Remotes.KeyEvent then
+                if not findobj(player.Character, "Kagune") and not findobj(player.Character, "Quinque")  then
+                    pressKey(array.stage)
+                end
+                if myData.ReputationFarm and (not findobj(player.PlayerFolder.CurrentQuest.Complete, "Aogiri Member") or player.PlayerFolder.CurrentQuest.Complete["Aogiri Member"].Value == player.PlayerFolder.CurrentQuest.Complete["Aogiri Member"].Max.Value) then
+                    getQuest(true)
+                    return
+                elseif myData.ReputationCashout and tick() - oldtick > 7200 then
+                    getQuest()
+                end
+
+                local npc = getNPC()
+
+                if npc then
+                    array.found = false
+                    local reached = false
+
+                    coroutine.wrap(function()
+                        while not reached do
+                            if npc ~= getNPC() then
+                                array.found = true
+                                break
+                            end
+                            wait()
+                        end
+                    end)()
+
+                    labels("text", "Moving to: "..npc.Name)
+
+                    if myData.Boss[npc.Name] or npc.Parent.Name == "GyakusatsuSpawn" then
+                        tp(npc.HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90),0,0) + Vector3.new(0,myData.DistanceFromBoss,0))
+                    else
+                        tp(npc.HumanoidRootPart.CFrame + npc.HumanoidRootPart.CFrame.lookVector * myData.DistanceFromNpc)
+                    end
+
+                    labels("text", "Killing: "..npc.Name)
+                    
+                    reached = true
+
+                    if not array.found then
+                        while findobj(findobj(npc.Parent, npc.Name), "Head") and player.Character.Humanoid.Health > 0 and array.autofarm do
+                            if not findobj(player.Character, "Kagune") and not findobj(player.Character, "Quinque")  then
+                                pressKey(array.stage)
+                            end
+                            if myData.Boss[npc.Name] or npc.Parent.Name == "GyakusatsuSpawn" then 
+                                for x,y in pairs(myData.Skills) do
+                                    if player.PlayerFolder.CanAct.Value and y and array.skills[x].Value ~= "DownTime" then
+                                        pressKey(x)
+                                    end
+                                end
+                                player.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame * CFrame.Angles(math.rad(90),0,0) + Vector3.new(0,myData.DistanceFromBoss ,0)
+                            else
+                                player.Character.HumanoidRootPart.CFrame = npc.HumanoidRootPart.CFrame + npc.HumanoidRootPart.CFrame.lookVector * myData.DistanceFromNpc 
+                            end
+                            if player.PlayerFolder.CanAct.Value then
+                                pressKey("Mouse1")
+                            end
+                            task.wait()
+                        end
+
+                        if npc.Name == "Gyakusatsu" then
+                            player.Character.Humanoid.Health = 0
+                        end
+
+                        if array.autofarm and player.Character.Humanoid.Health > 0 then
+                            labels("Kills", 1)
+                            if npc.Name ~= "Eto Yoshimura" and not findobj(npc.Parent, "Gyakusatsu") and npc.Name ~= "Gyakusatsu" then  
+                                labels("text", "Collecting corpse...")
+                                collect(npc)
+                            end
+                        end
+                    end
+                else
+                    labels("text", "Target not found, waiting...")
+                end
+            else
+                labels("text", "Waiting for character to respawn")
+                array.died = true
+            end
+        end)
+    else
+        labels("text", "")
+    end
+    wait()
+end
