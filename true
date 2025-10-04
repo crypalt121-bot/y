@@ -1,4 +1,4 @@
--- Modern minimal GUI wrapper (entegre edildi)
+-- Modern minimal GUI wrapper (düzeltildi ve yeniden yazıldı)
 local function CreateModernGUI()
     local Players = game:GetService("Players")
     local LocalPlayer = Players.LocalPlayer
@@ -9,7 +9,6 @@ local function CreateModernGUI()
     screenGui.Name = "ModernMinimalGUI"
     screenGui.Parent = PlayerGui
 
-    -- Main window
     local mainFrame = Instance.new("Frame")
     mainFrame.Name = "MainWindow"
     mainFrame.Size = UDim2.new(0, 700, 0, 420)
@@ -19,9 +18,7 @@ local function CreateModernGUI()
     mainFrame.BorderSizePixel = 0
     mainFrame.Parent = screenGui
     mainFrame.ClipsDescendants = true
-
-    local uiCorner = Instance.new("UICorner", mainFrame)
-    uiCorner.CornerRadius = UDim.new(0, 12)
+    Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 12)
 
     local titleBar = Instance.new("Frame", mainFrame)
     titleBar.Name = "TitleBar"
@@ -38,13 +35,11 @@ local function CreateModernGUI()
     title.TextSize = 18
     title.TextColor3 = Color3.fromRGB(230,230,230)
 
-    -- Left sidebar (tabs)
     local sidebar = Instance.new("Frame", mainFrame)
     sidebar.Name = "Sidebar"
     sidebar.Size = UDim2.new(0, 150, 1, -52)
     sidebar.Position = UDim2.new(0, 12, 0, 50)
     sidebar.BackgroundTransparency = 1
-
     local sidebarLayout = Instance.new("UIListLayout", sidebar)
     sidebarLayout.SortOrder = Enum.SortOrder.LayoutOrder
     sidebarLayout.Padding = UDim.new(0, 8)
@@ -57,25 +52,10 @@ local function CreateModernGUI()
     content.Size = UDim2.new(1, -186, 1, -62)
     content.BackgroundTransparency = 1
     content.ClipsDescendants = true
-
     local contentUIList = Instance.new("UIListLayout", content)
     contentUIList.SortOrder = Enum.SortOrder.LayoutOrder
     contentUIList.Padding = UDim.new(0, 8)
 
-    -- simple divider style helper
-    local function MakeDivider(parent)
-        local d = Instance.new("Frame", parent)
-        d.Size = UDim2.new(1, 0, 0, 1)
-        d.BackgroundColor3 = Color3.fromRGB(60,60,65)
-        d.BorderSizePixel = 0
-        return d
-    end
-
-    -- storage for api objects
-    local windowAPI = {}
-    local tabs = {}
-
-    -- utilities to create minimal components
     local function createLabel(text, parent)
         local lab = Instance.new("TextLabel", parent)
         lab.Size = UDim2.new(1, 0, 0, 20)
@@ -97,8 +77,7 @@ local function CreateModernGUI()
         btn.TextSize = 14
         btn.Text = text or "Button"
         btn.TextColor3 = Color3.fromRGB(230,230,230)
-        local c = Instance.new("UICorner", btn)
-        c.CornerRadius = UDim.new(0,6)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
         return btn
     end
 
@@ -125,8 +104,7 @@ local function CreateModernGUI()
         toggle.Font = Enum.Font.GothamBold
         toggle.TextSize = 12
         toggle.TextColor3 = Color3.fromRGB(240,240,240)
-        local c = Instance.new("UICorner", toggle)
-        c.CornerRadius = UDim.new(0,6)
+        Instance.new("UICorner", toggle).CornerRadius = UDim.new(0,6)
         return frame, toggle
     end
 
@@ -149,15 +127,13 @@ local function CreateModernGUI()
         sliderFrame.Size = UDim2.new(1, 0, 0, 18)
         sliderFrame.BackgroundColor3 = Color3.fromRGB(36,36,38)
         sliderFrame.BorderSizePixel = 0
-        local c = Instance.new("UICorner", sliderFrame)
-        c.CornerRadius = UDim.new(0,6)
+        Instance.new("UICorner", sliderFrame).CornerRadius = UDim.new(0,6)
 
         local fill = Instance.new("Frame", sliderFrame)
         fill.Size = UDim2.new(0, 0, 1, 0)
         fill.BackgroundColor3 = Color3.fromRGB(80,160,255)
         fill.BorderSizePixel = 0
-        local fc = Instance.new("UICorner", fill)
-        fc.CornerRadius = UDim.new(0,6)
+        Instance.new("UICorner", fill).CornerRadius = UDim.new(0,6)
 
         local valueLabel = Instance.new("TextLabel", sliderFrame)
         valueLabel.AnchorPoint = Vector2.new(1, 0.5)
@@ -169,7 +145,6 @@ local function CreateModernGUI()
         valueLabel.TextColor3 = Color3.fromRGB(220,220,220)
         valueLabel.Text = tostring(min or 0)
 
-        -- return API
         local obj = {
             Frame = frame,
             Set = function(v)
@@ -185,7 +160,6 @@ local function CreateModernGUI()
             end
         }
 
-        -- interaction if not readonly
         if not readonly and min and max then
             sliderFrame.InputBegan:Connect(function(input)
                 if input.UserInputType == Enum.UserInputType.MouseButton1 then
@@ -241,8 +215,7 @@ local function CreateModernGUI()
         btn.TextSize = 13
         btn.Text = "Select"
         btn.TextColor3 = Color3.fromRGB(220,220,220)
-        local c = Instance.new("UICorner", btn)
-        c.CornerRadius = UDim.new(0,6)
+        Instance.new("UICorner", btn).CornerRadius = UDim.new(0,6)
 
         local options = {}
         local dropdownFrame
@@ -271,12 +244,11 @@ local function CreateModernGUI()
                 optBtn.BorderSizePixel = 0
                 optBtn.Font = Enum.Font.Gotham
                 optBtn.TextSize = 13
-                optBtn.Text = opt
+                optBtn.Text = tostring(opt)
                 optBtn.TextColor3 = Color3.fromRGB(230,230,230)
-                local uc = Instance.new("UICorner", optBtn)
-                uc.CornerRadius = UDim.new(0,6)
+                Instance.new("UICorner", optBtn).CornerRadius = UDim.new(0,6)
                 optBtn.MouseButton1Click:Connect(function()
-                    btn.Text = opt
+                    btn.Text = tostring(opt)
                     if frame._callback then frame._callback(opt) end
                     dropdownFrame.Visible = false
                     open = false
@@ -287,9 +259,8 @@ local function CreateModernGUI()
         btn.MouseButton1Click:Connect(function()
             open = not open
             if open then
-                -- position dropdown near content and show
                 buildDropdown()
-                dropdownFrame.Position = UDim2.new(0, 174, 0, 50) -- simplistic placement
+                dropdownFrame.Position = UDim2.new(0, 174, 0, 50)
                 dropdownFrame.Visible = true
             else
                 if dropdownFrame then dropdownFrame.Visible = false end
@@ -319,8 +290,7 @@ local function CreateModernGUI()
         textBox.TextColor3 = Color3.fromRGB(230,230,230)
         textBox.BackgroundColor3 = Color3.fromRGB(30,30,32)
         textBox.BorderSizePixel = 0
-        local c = Instance.new("UICorner", textBox)
-        c.CornerRadius = UDim.new(0,8)
+        Instance.new("UICorner", textBox).CornerRadius = UDim.new(0,8)
 
         local obj = {}
         function obj:Set(txt) textBox.Text = txt end
@@ -329,7 +299,9 @@ local function CreateModernGUI()
         return obj
     end
 
-    -- API: window creation
+    local windowAPI = {}
+    local tabs = {}
+
     function windowAPI:AddTab(name)
         local tabBtn = createButton(name, sidebar)
         tabBtn.Size = UDim2.new(1, -6, 0, 30)
@@ -350,20 +322,18 @@ local function CreateModernGUI()
         local tabObj = {}
 
         function tabObj:AddLabel(txt)
-            local l = createLabel(txt, tabContent)
-            return {label = l}
+            return createLabel(txt or "", tabContent)
         end
 
         function tabObj:AddButton(txt, fn)
             local b = createButton(txt, tabContent)
             b.MouseButton1Click:Connect(function() pcall(fn) end)
-            -- provide Text property so external code can assign to b.Text
             return b
         end
 
         function tabObj:AddDropdown(txt, fn)
             local dd = createDropdown(txt, tabContent)
-            dd.OnChange(fn)
+            if fn then dd:OnChange(fn) end
             return dd
         end
 
@@ -400,7 +370,6 @@ local function CreateModernGUI()
         end
 
         function tabObj:Show()
-            -- hide others
             for i,v in pairs(tabs) do
                 v.Content.Visible = false
             end
@@ -417,33 +386,25 @@ local function CreateModernGUI()
         return tabObj
     end
 
-    -- instantiate minimal default structure and return API
     return windowAPI, mainFrame
 end
 
 -- create and use modern GUI
 local gui, _mainFrame = CreateModernGUI()
--- keep API compatibility: AddWindow returns an object with AddTab method
--- original script calls :AddWindow(...). Emulate that:
+
 local function AddWindow(title, opts)
-    -- set title if given
-    pcall(function() 
-        -- try to set title if gui created frame exists
-        -- This wrapper created title internally already; nothing else needed.
-    end)
     return {
         AddTab = function(name) return gui:AddTab(name) end
     }
 end
 
--- replace original loader call with our AddWindow
 local gui = AddWindow("Ro-Ghoul", {
     main_color = Color3.fromRGB(0,0,0),
     min_size = Vector2.new(373, 340),
     can_resize = false
 })
 
--- === ORIGINAL SCRIPT BEGINS (touched only GUI creation above) ===
+-- === ORIJINAL SCRIPT (GUI hariç) ===
 
 local get = setmetatable({}, {
     __index = function(a, b)
@@ -462,18 +423,8 @@ local team, remotes, stat = player.PlayerFolder.Customization.Team.Value, get.Re
 local oldtick, farmtick = 0, 0
 local camera = workspace.CurrentCamera
 local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/scripts/master/Settings.lua"))()("Ro-Ghoul Autofarm", {
-    Skills = {
-        E = false,
-        F = false,
-        C = false,
-        R = false
-    },
-    Boss = {
-        ["Gyakusatsu"] = false,
-        ["Eto Yoshimura"] = false,
-        ["Koutarou Amon"] = false,
-        ["Nishiki Nishio"] = false
-    },
+    Skills = { E = false, F = false, C = false, R = false },
+    Boss = { ["Gyakusatsu"] = false, ["Eto Yoshimura"] = false, ["Koutarou Amon"] = false, ["Nishiki Nishio"] = false },
     DistanceFromNpc = 5,
     DistanceFromBoss = 8,
     TeleportSpeed = 150,
@@ -483,17 +434,9 @@ local myData = loadstring(game:HttpGet("https://raw.githubusercontent.com/z4gs/s
 })
 
 local array = {
-    boss = {
-        ["Gyakusatsu"] = 1250,
-        ["Eto Yoshimura"] = 1250,
-        ["Koutarou Amon"] = 750,
-        ["Nishiki Nishio"] = 250
-    },
-
+    boss = { ["Gyakusatsu"] = 1250, ["Eto Yoshimura"] = 1250, ["Koutarou Amon"] = 750, ["Nishiki Nishio"] = 250 },
     npcs = {["Aogiri Members"] = "GhoulSpawns", Investigators = "CCGSpawns", Humans = "HumanSpawns"},
-
     stages = {"One", "Two", "Three", "Four", "Five", "Six"},
-
     skills = {
         E = player.PlayerFolder.Special1CD,
         F = player.PlayerFolder.Special3CD,
@@ -858,7 +801,6 @@ coroutine.wrap(function()
     end
 end)()
 
--- remote Key grabber + grab updated trainers table
 do
     fireclickdetector(workspace.TrainerModel.ClickIndicator.ClickDetector)
     waitforobj(waitforobj(player.PlayerGui, "TrainersGui"), "TrainersGuiScript")
@@ -884,7 +826,6 @@ do
     until key
 end
 
--- auto farm
 while true do
     if array.autofarm then
         pcall(function()
