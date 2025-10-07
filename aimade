@@ -60,72 +60,78 @@ local function getClosestPlayer()
     return closestHead
 end
 
--- Locate the RemoteFunction
-print("\n[KURULUM] RemoteFunction aranıyor...")
-local success, FireShotRemote = pcall(function()
-    return game:GetService("ReplicatedStorage").Functions.Sniper.FireShot
-end)
+-- Hook __namecall metamethod
+print("\n[KURULUM] __namecall metamethod hook'lanıyor...")
 
-if not success or not FireShotRemote then
-    warn("\n[HATA] ❌ FireShot RemoteFunction bulunamadı!")
-    warn("Hata detayı: " .. tostring(FireShotRemote))
-    return
-end
-
-print("[KURULUM] ✓ RemoteFunction bulundu: " .. FireShotRemote:GetFullName())
-
--- Hook the InvokeServer method
-print("[KURULUM] Hook kuruluyor...")
 local hookSuccess, hookError = pcall(function()
-    local oldInvoke = hookfunction(FireShotRemote.InvokeServer, function(self, startPos, lookVec, zoom)
-        print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("🔫 [ATEŞ] Hook tetiklendi!")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-        print("\n[ORİJİNAL PARAMETRELER]")
-        print("├─ StartPos (Başlangıç): " .. tostring(startPos))
-        print("├─ LookVec (Yön): " .. tostring(lookVec))
-        print("└─ Zoom: " .. tostring(zoom))
+    local oldNamecall
+    oldNamecall = hookmetamethod(game, "__namecall", function(self, ...)
+        local method = getnamecallmethod()
+        local args = {...}
         
-        local targetHead = getClosestPlayer()
-        
-        if targetHead then
-            -- Kamera pozisyonundan hedefin kafasına doğru yön hesapla
-            local direction = (targetHead.Position - startPos).Unit
-            lookVec = direction
+        -- FireShot RemoteFunction'ını yakala
+        if method == "InvokeServer" and self.Name == "FireShot" and self.Parent and self.Parent.Name == "Sniper" then
+            print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            print("🔫 [ATEŞ] Hook tetiklendi!")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+            print("\n[ORİJİNAL PARAMETRELER]")
+            print("├─ StartPos (Başlangıç): " .. tostring(args[1]))
+            print("├─ LookVec (Yön): " .. tostring(args[2]))
+            print("└─ Zoom: " .. tostring(args[3]))
             
-            print("\n[MODİFİKASYON] ✓ Parametreler değiştirildi!")
-            print("├─ Hedef: " .. targetHead.Parent.Name)
-            print("├─ Hedef pozisyon: " .. tostring(targetHead.Position))
-            print("├─ Yeni LookVec (Yön): " .. tostring(lookVec))
-            print("├─ StartPos: " .. tostring(startPos) .. " (DEĞİŞMEDİ - Kamera pozisyonu)")
-            print("└─ Açı farkı: ~" .. math.floor(math.deg(math.acos(lookVec:Dot(direction)))) .. "°")
-        else
-            print("\n[MODİFİKASYON] ⚠ Hedef bulunamadı")
-            print("└─ Orijinal parametreler kullanılıyor")
+            local targetHead = getClosestPlayer()
+            
+            if targetHead then
+                -- Kamera pozisyonundan hedefin kafasına doğru yön hesapla
+                local startPos = args[1]
+                local direction = (targetHead.Position - startPos).Unit
+                
+                -- Orijinal vektör ile yeni vektör arasındaki açı farkını hesapla
+                local originalVec = args[2]
+                local angleDiff = math.deg(math.acos(math.clamp(originalVec:Dot(direction), -1, 1)))
+                
+                -- LookVec'i değiştir
+                args[2] = direction
+                
+                print("\n[MODİFİKASYON] ✓ Parametreler değiştirildi!")
+                print("├─ Hedef: " .. targetHead.Parent.Name)
+                print("├─ Hedef pozisyon: " .. tostring(targetHead.Position))
+                print("├─ Yeni LookVec (Yön): " .. tostring(direction))
+                print("├─ StartPos: " .. tostring(startPos) .. " (DEĞİŞMEDİ)")
+                print("└─ Açı farkı: " .. math.floor(angleDiff) .. "°")
+            else
+                print("\n[MODİFİKASYON] ⚠ Hedef bulunamadı")
+                print("└─ Orijinal parametreler kullanılıyor")
+            end
+            
+            print("\n[ÇAĞRI] RemoteFunction çağrılıyor...")
+            local startTime = tick()
+            local result = oldNamecall(self, unpack(args))
+            local elapsed = (tick() - startTime) * 1000
+            
+            print("[SONUÇ] RemoteFunction yanıt verdi")
+            print("├─ Dönüş değeri: " .. tostring(result))
+            print("└─ İşlem süresi: " .. math.floor(elapsed) .. "ms")
+            print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+            
+            return result
         end
         
-        print("\n[ÇAĞRI] RemoteFunction çağrılıyor...")
-        local startTime = tick()
-        local result = oldInvoke(self, startPos, lookVec, zoom)
-        local elapsed = (tick() - startTime) * 1000
-        
-        print("[SONUÇ] RemoteFunction yanıt verdi")
-        print("├─ Dönüş değeri: " .. tostring(result))
-        print("└─ İşlem süresi: " .. math.floor(elapsed) .. "ms")
-        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
-        
-        return result
+        -- Diğer tüm çağrıları normal şekilde geçir
+        return oldNamecall(self, ...)
     end)
 end)
 
 if hookSuccess then
     print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("✅ BAŞARILI! Hook kuruldu ve aktif.")
+    print("✅ BAŞARILI! __namecall hook kuruldu ve aktif.")
     print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
-    print("\nAteş etmeyi deneyin. Tüm işlemler loglanacak.\n")
+    print("\nSniper ile ateş etmeyi deneyin. Tüm işlemler loglanacak.\n")
 else
     warn("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     warn("❌ BAŞARISIZ! Hook kurulamadı!")
     warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
     warn("Hata detayı: " .. tostring(hookError))
+    warn("\nExecutor'ünüz hookmetamethod desteklemiyor olabilir.")
+    warn("Lütfen başka bir executor deneyin (Synapse X, Script-Ware, etc.)")
 end
