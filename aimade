@@ -1,0 +1,131 @@
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+print("🎯 Sniper Aimbot Script Başlatılıyor...")
+print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+
+-- Function to find the closest player (excluding self)
+local function getClosestPlayer()
+    local closestHead = nil
+    local minDist = math.huge
+    local myPos = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") 
+        and LocalPlayer.Character.HumanoidRootPart.Position 
+        or Camera.CFrame.Position
+    
+    print("\n[HEDEF ARAMA] Başlatıldı")
+    print("├─ Kendi pozisyon: " .. tostring(myPos))
+    
+    local validTargets = 0
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer then
+            if player.Character then
+                local head = player.Character:FindFirstChild("Head")
+                local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+                
+                if not head then
+                    print("├─ ✗ " .. player.Name .. " - Head bulunamadı")
+                elseif not humanoid then
+                    print("├─ ✗ " .. player.Name .. " - Humanoid bulunamadı")
+                elseif humanoid.Health <= 0 then
+                    print("├─ ✗ " .. player.Name .. " - Ölü (HP: 0)")
+                else
+                    validTargets = validTargets + 1
+                    local dist = (head.Position - myPos).Magnitude
+                    print("├─ ✓ " .. player.Name .. " - Mesafe: " .. math.floor(dist) .. " studs")
+                    
+                    if dist < minDist then
+                        minDist = dist
+                        closestHead = head
+                    end
+                end
+            else
+                print("├─ ✗ " .. player.Name .. " - Character yok")
+            end
+        end
+    end
+    
+    print("└─ Toplam geçerli hedef: " .. validTargets)
+    
+    if closestHead then
+        print("\n[SONUÇ] ✓ En yakın hedef bulundu!")
+        print("├─ Oyuncu: " .. closestHead.Parent.Name)
+        print("├─ Mesafe: " .. math.floor(minDist) .. " studs")
+        print("└─ Kafa pozisyonu: " .. tostring(closestHead.Position))
+    else
+        print("\n[SONUÇ] ✗ Hiç geçerli hedef yok!")
+    end
+    
+    return closestHead
+end
+
+-- Locate the RemoteFunction
+print("\n[KURULUM] RemoteFunction aranıyor...")
+local success, FireShotRemote = pcall(function()
+    return game:GetService("ReplicatedStorage").Functions.Sniper.FireShot
+end)
+
+if not success or not FireShotRemote then
+    warn("\n[HATA] ❌ FireShot RemoteFunction bulunamadı!")
+    warn("Hata detayı: " .. tostring(FireShotRemote))
+    return
+end
+
+print("[KURULUM] ✓ RemoteFunction bulundu: " .. FireShotRemote:GetFullName())
+
+-- Hook the InvokeServer method
+print("[KURULUM] Hook kuruluyor...")
+local hookSuccess, hookError = pcall(function()
+    local oldInvoke = hookfunction(FireShotRemote.InvokeServer, function(self, startPos, lookVec, zoom)
+        print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("🔫 [ATEŞ] Hook tetiklendi!")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+        print("\n[ORİJİNAL PARAMETRELER]")
+        print("├─ StartPos (Başlangıç): " .. tostring(startPos))
+        print("├─ LookVec (Yön): " .. tostring(lookVec))
+        print("└─ Zoom: " .. tostring(zoom))
+        
+        local targetHead = getClosestPlayer()
+        
+        if targetHead then
+            -- Kamera pozisyonundan hedefin kafasına doğru yön hesapla
+            local direction = (targetHead.Position - startPos).Unit
+            lookVec = direction
+            
+            print("\n[MODİFİKASYON] ✓ Parametreler değiştirildi!")
+            print("├─ Hedef: " .. targetHead.Parent.Name)
+            print("├─ Hedef pozisyon: " .. tostring(targetHead.Position))
+            print("├─ Yeni LookVec (Yön): " .. tostring(lookVec))
+            print("├─ StartPos: " .. tostring(startPos) .. " (DEĞİŞMEDİ - Kamera pozisyonu)")
+            print("└─ Açı farkı: ~" .. math.floor(math.deg(math.acos(lookVec:Dot(direction)))) .. "°")
+        else
+            print("\n[MODİFİKASYON] ⚠ Hedef bulunamadı")
+            print("└─ Orijinal parametreler kullanılıyor")
+        end
+        
+        print("\n[ÇAĞRI] RemoteFunction çağrılıyor...")
+        local startTime = tick()
+        local result = oldInvoke(self, startPos, lookVec, zoom)
+        local elapsed = (tick() - startTime) * 1000
+        
+        print("[SONUÇ] RemoteFunction yanıt verdi")
+        print("├─ Dönüş değeri: " .. tostring(result))
+        print("└─ İşlem süresi: " .. math.floor(elapsed) .. "ms")
+        print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
+        
+        return result
+    end)
+end)
+
+if hookSuccess then
+    print("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("✅ BAŞARILI! Hook kuruldu ve aktif.")
+    print("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    print("\nAteş etmeyi deneyin. Tüm işlemler loglanacak.\n")
+else
+    warn("\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    warn("❌ BAŞARISIZ! Hook kurulamadı!")
+    warn("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
+    warn("Hata detayı: " .. tostring(hookError))
+end
